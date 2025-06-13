@@ -1,0 +1,29 @@
+name: Run Investment Bot Daily
+
+on:
+  schedule:
+    - cron: "0 23 * * *"  # 毎日8:00 JST（23:00 UTC）
+  workflow_dispatch:      # 手動実行も可能
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Run bot
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          python main.py

@@ -1,10 +1,8 @@
 import os
 import requests
-from dotenv import load_dotenv
 from datetime import datetime
 
-load_dotenv()
-WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
+WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL")
 
 def notify(df):
     if df.empty:
@@ -22,7 +20,7 @@ def notify(df):
         print(f"Slack通知失敗: {response.status_code} - {response.text}")
     else:
         print("Slackに通知しました。")
-    
+
     save_to_csv(df)
 
 def save_to_csv(df):
