@@ -1,6 +1,7 @@
 import os
 import requests
 from dotenv import load_dotenv
+from datetime import datetime
 
 load_dotenv()
 WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
@@ -21,3 +22,14 @@ def notify(df):
         print(f"Slack通知失敗: {response.status_code} - {response.text}")
     else:
         print("Slackに通知しました。")
+    
+    save_to_csv(df)
+
+def save_to_csv(df):
+    if df.empty:
+        return
+    os.makedirs("data", exist_ok=True)
+    today_str = datetime.today().strftime("%Y-%m-%d")
+    filename = f"data/screening_log_{today_str}.csv"
+    df.to_csv(filename, index=False)
+    print(f"CSV保存完了: {filename}")
