@@ -5,3 +5,4 @@ pyyaml
 gspread
 pandas
 gspread-dataframe
+backtrader
