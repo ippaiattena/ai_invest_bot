@@ -22,6 +22,12 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Write GCP credentials file
+        run: |
+            echo "$GCP_CREDENTIALS_B64" | base64 --decode > credentials.json
+        env:
+            GCP_CREDENTIALS_B64: ${{ secrets.GCP_CREDENTIALS_B64 }}
+
       - name: Run bot
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

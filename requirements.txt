@@ -2,3 +2,6 @@ yfinance
 pandas
 ta
 pyyaml
+gspread
+pandas
+gspread-dataframe

@@ -1,6 +1,8 @@
 import os
 import requests
 from datetime import datetime
+import gspread
+from gspread_dataframe import set_with_dataframe
 
 WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL")
 
@@ -21,7 +23,8 @@ def notify(df):
     else:
         print("Slackに通知しました。")
 
-    save_to_csv(df)
+    save_to_csv(df)    # 不要なら消して良い
+    save_to_sheet(df)
 
 def save_to_csv(df):
     if df.empty:
@@ -31,3 +34,23 @@ def save_to_csv(df):
     filename = f"data/screening_log_{today_str}.csv"
     df.to_csv(filename, index=False)
     print(f"CSV保存完了: {filename}")
+
+def save_to_sheet(df):
+    if df.empty:
+        return
+
+    # 認証
+    gc = gspread.service_account(filename='credentials.json')
+
+    # スプレッドシートのID or URL（例：シートURLの /d/XXX の部分）
+    SPREADSHEET_ID = '1gFROcwTXReZVnM3XWKNoRDsiejfkSNtwoQbB8SMsePs'
+    sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("Sheet1")
+
+    # 日付列を追加
+    df['Date'] = datetime.today().strftime("%Y-%m-%d")
+
+    # 既存行数を取得（ヘッダー＋既存データ）
+    existing_rows = len(sheet.get_all_values())
+
+    # 書き込み（1行目はヘッダーなので +1 して新しい行に追加）
+    set_with_dataframe(sheet, df, row=existing_rows+1, include_column_header=existing_rows == 0)
