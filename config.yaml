@@ -1,0 +1,7 @@
+tickers:
+  - AAPL
+  - MSFT
+  - GOOG
+  - AMZN
+  - META
+rsi_threshold: 70
