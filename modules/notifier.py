@@ -44,7 +44,7 @@ def save_to_sheet(df):
 
     # スプレッドシートのID or URL（例：シートURLの /d/XXX の部分）
     SPREADSHEET_ID = '1gFROcwTXReZVnM3XWKNoRDsiejfkSNtwoQbB8SMsePs'
-    sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("Sheet1")
+    sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("daily")
 
     # 日付列を追加
     df['Date'] = datetime.today().strftime("%Y-%m-%d")
