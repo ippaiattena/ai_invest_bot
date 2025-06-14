@@ -29,6 +29,10 @@ jobs:
         run: |
             echo "$GCP_CREDENTIALS_B64" | base64 --decode > credentials.json
 
+      - name: Debug credentials content
+        run: |
+          head -n 10 credentials.json || echo "credentials.json is missing or empty"
+
       - name: Run main.py
         run: |
           python main.py
