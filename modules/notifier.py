@@ -92,7 +92,7 @@ def send_chart_to_slack(filepath):
                 file=f,
                 filename=os.path.basename(filepath),
                 title="📊 バックテストチャート",
-                channels=["ai-invest-notify"]  # チャンネル名（#なし、リストで）
+                channels=["C0918E8KW6P"]  # チャンネル名（#なし、リストで）
             )
         if result["ok"]:
             print("チャート画像をSlackに送信しました。")
