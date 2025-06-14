@@ -8,3 +8,4 @@ gspread-dataframe
 backtrader
 matplotlib
 slack_sdk
+mplfinance
