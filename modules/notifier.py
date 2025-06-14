@@ -13,13 +13,26 @@ SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")  # ← 追加
 CLIENT = WebClient(token=SLACK_BOT_TOKEN)       # ← 追加
 
 def notify(df):
+
+    message = ""
+    
     if df.empty:
-        message = "📉 No Buy signals today."
+        message += "📉 No Buy signals today."
     else:
-        message = "*📈 AI Screening Results*\n"
-        for _, row in df.iterrows():
-            line = f"- `{row['Ticker']}`: *{row['Signal']}* @ {row['Close']} (RSI: {row['RSI']})"
-            message += line + "\n"
+        buy_df = df[df["Signal"] == "Buy"]
+        others_df = df[df["Signal"] != "Buy"]
+
+        if not buy_df.empty:
+            message += "*📈 今日のBuy候補*\n"
+            for _, row in buy_df.iterrows():
+                line = f"- `{row['Ticker']}`: *Buy* @ {row['Close']} (RSI: {row['RSI']})"
+                message += line + "\n"
+
+        if not others_df.empty:
+            message += "\n*📊 その他の銘柄*\n"
+            for _, row in others_df.iterrows():
+                line = f"- `{row['Ticker']}`: {row['Signal']} @ {row['Close']} (RSI: {row['RSI']})"
+                message += line + "\n"
 
     # --- 売買ログが存在すればトレードサマリーを追記 ---
     trade_log_path = "data/backtest_trades_AAPL_2023-01-01_to_2024-01-01.csv"
