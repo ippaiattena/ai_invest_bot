@@ -37,7 +37,6 @@ print(f"初期資金: {cerebro.broker.getvalue():.2f}")
 results = cerebro.run()
 print(f"最終資金: {cerebro.broker.getvalue():.2f}")
 
-#results = cerebro.run()
 strategy = results[0]
 
 print("=== バックテスト評価指標 ===")
@@ -49,6 +48,8 @@ if sharpe is not None:
 else:
     print("シャープレシオ              : 計算不可（取引が少ないなど）")
 print(f"最大ドローダウン           : {strategy.analyzers.drawdown.get_analysis()['max']['drawdown']:.2f}%")
+
+os.makedirs("data", exist_ok=True)
 
 log_df = pd.DataFrame(strategy.trade_log)
 if not log_df.empty:
