@@ -4,7 +4,7 @@ from datetime import datetime
 import gspread
 from gspread_dataframe import set_with_dataframe
 
-WEBHOOK_URL = os.environ.get("SLACK_WEBHOOK_URL")
+WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
 
 def notify(df):
     if df.empty:
