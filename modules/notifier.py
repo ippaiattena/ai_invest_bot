@@ -87,16 +87,16 @@ def save_to_sheet(df):
 
 def send_chart_to_slack(filepath):
     try:
-        response = CLIENT.files_upload(
-            channels="#ai-invest-notify",
-            file=filepath,
-            title="📊 バックテストチャート",
-            filename=os.path.basename(filepath),
-            filetype=mimetypes.guess_type(filepath)[0] or "image/png"
-        )
-        if not response["ok"]:
-            print(f"Slackファイル送信失敗: {response['error']}")
-        else:
+        with open(filepath, "rb") as f:
+            result = CLIENT.files_upload_v2(
+                file=f,
+                filename=os.path.basename(filepath),
+                title="📊 バックテストチャート",
+                channels=["ai-invest-notify"]  # チャンネル名（#なし、リストで）
+            )
+        if result["ok"]:
             print("チャート画像をSlackに送信しました。")
+        else:
+            print(f"Slackファイル送信失敗: {result['error']}")
     except Exception as e:
         print(f"チャート画像の送信中にエラー発生: {e}")
