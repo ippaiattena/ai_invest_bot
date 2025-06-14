@@ -4,8 +4,13 @@ from datetime import datetime
 import gspread
 from gspread_dataframe import set_with_dataframe
 import pandas as pd
+import mimetypes
+import slack_sdk
+from slack_sdk.web import WebClient
 
 WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
+SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")  # ← 追加
+CLIENT = WebClient(token=SLACK_BOT_TOKEN)       # ← 追加
 
 def notify(df):
     if df.empty:
@@ -46,6 +51,11 @@ def notify(df):
     save_to_csv(df)    # 不要なら消して良い
     save_to_sheet(df)
 
+    # チャート画像があればSlackに送信
+    chart_path = f"data/backtest_plot_mpl_AAPL.png"
+    if os.path.exists(chart_path):
+        send_chart_to_slack(chart_path)
+
 def save_to_csv(df):
     if df.empty:
         return
@@ -74,3 +84,19 @@ def save_to_sheet(df):
 
     # 書き込み（1行目はヘッダーなので +1 して新しい行に追加）
     set_with_dataframe(sheet, df, row=existing_rows+1, include_column_header=existing_rows == 0)
+
+def send_chart_to_slack(filepath):
+    try:
+        response = CLIENT.files_upload(
+            channels="#general",  # ← チャンネル名やIDに変更可能
+            file=filepath,
+            title="📊 バックテストチャート",
+            filename=os.path.basename(filepath),
+            filetype=mimetypes.guess_type(filepath)[0] or "image/png"
+        )
+        if not response["ok"]:
+            print(f"Slackファイル送信失敗: {response['error']}")
+        else:
+            print("チャート画像をSlackに送信しました。")
+    except Exception as e:
+        print(f"チャート画像の送信中にエラー発生: {e}")
