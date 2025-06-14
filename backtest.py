@@ -7,6 +7,7 @@ import backtrader as bt
 import os
 import pandas as pd
 from strategies.sma_rsi_strategy import SmaRsiStrategy
+from modules.plotting import plot_trade_chart
 
 TICKER = 'AAPL'
 START = '2023-01-01'
@@ -105,5 +106,4 @@ apds = [
 
 # チャート描画（保存のみ、表示しない）
 plot_path = f"data/backtest_plot_mpl_{TICKER}.png"
-mpf.plot(df, type='candle', style='charles', addplot=apds, volume=False, savefig=plot_path)
-print(f"チャート画像を保存しました: {plot_path}")
+plot_trade_chart(df, strategy.trade_log, TICKER, plot_path)
