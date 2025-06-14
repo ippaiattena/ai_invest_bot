@@ -88,7 +88,7 @@ def save_to_sheet(df):
 def send_chart_to_slack(filepath):
     try:
         response = CLIENT.files_upload(
-            channels="#general",  # ← チャンネル名やIDに変更可能
+            channels="#ai-invest-notify",
             file=filepath,
             title="📊 バックテストチャート",
             filename=os.path.basename(filepath),
