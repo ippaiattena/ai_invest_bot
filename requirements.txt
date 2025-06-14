@@ -6,3 +6,4 @@ gspread
 pandas
 gspread-dataframe
 backtrader
+matplotlib
