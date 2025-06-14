@@ -7,6 +7,10 @@ import pandas as pd
 import mimetypes
 import slack_sdk
 from slack_sdk.web import WebClient
+from dotenv import load_dotenv
+
+# .envファイルの読み込み（ローカル環境用）
+load_dotenv()
 
 WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")  # ← 追加
@@ -15,7 +19,7 @@ CLIENT = WebClient(token=SLACK_BOT_TOKEN)       # ← 追加
 def notify(df):
 
     message = ""
-    
+
     if df.empty:
         message += "📉 No Buy signals today."
     else:
