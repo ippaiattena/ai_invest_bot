@@ -3,6 +3,7 @@ import requests
 from datetime import datetime
 import gspread
 from gspread_dataframe import set_with_dataframe
+import pandas as pd
 
 WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
 
@@ -14,6 +15,25 @@ def notify(df):
         for _, row in df.iterrows():
             line = f"- `{row['Ticker']}`: *{row['Signal']}* @ {row['Close']} (RSI: {row['RSI']})"
             message += line + "\n"
+
+    # --- 売買ログが存在すればトレードサマリーを追記 ---
+    trade_log_path = "data/backtest_trades_AAPL_2023-01-01_to_2024-01-01.csv"
+    if os.path.exists(trade_log_path):
+        trade_df = pd.read_csv(trade_log_path)
+        sell_df = trade_df[trade_df['type'] == 'SELL'].dropna()
+        if not sell_df.empty:
+            total = len(sell_df)
+            wins = (sell_df['profit'] > 0).sum()
+            avg_profit = sell_df['profit'].mean()
+            avg_holding = sell_df['holding_days'].mean()
+            summary = (
+                "\n:chart_with_upwards_trend: *トレードサマリー*\n"
+                f"- 総トレード数       : {total}\n"
+                f"- 勝率               : {wins / total * 100:.1f}%\n"
+                f"- 平均損益           : {avg_profit:.2f}\n"
+                f"- 平均保有期間（日） : {avg_holding:.1f}日"
+            )
+            message += summary
 
     payload = {"text": message}
     response = requests.post(WEBHOOK_URL, json=payload)

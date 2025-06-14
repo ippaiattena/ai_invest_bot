@@ -58,6 +58,23 @@ if not log_df.empty:
 else:
     print("\n売買ログはありませんでした。")
 
+if not log_df.empty and 'profit' in log_df.columns:
+    # SELLのデータのみ分析対象
+    sell_df = log_df[log_df['type'] == 'SELL'].copy()
+
+    total_trades = len(sell_df)
+    avg_profit = sell_df['profit'].mean()
+    win_rate = (sell_df['profit'] > 0).mean() * 100  # 勝率（%）
+    avg_hold_days = sell_df['holding_days'].mean()
+
+    print("\n=== トレードサマリー ===")
+    print(f"総トレード回数      : {total_trades}")
+    print(f"平均損益             : {avg_profit:.2f}")
+    print(f"勝率                 : {win_rate:.2f}%")
+    print(f"平均保有期間（日）   : {avg_hold_days:.2f}")
+else:
+    print("\nトレードサマリーを出力できるデータがありませんでした。")
+
 # グラフ表示
 import mplfinance as mpf
 

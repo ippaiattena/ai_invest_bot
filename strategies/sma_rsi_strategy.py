@@ -47,6 +47,8 @@ class SmaRsiStrategy(bt.Strategy):
                     'date': dt,
                     'type': 'SELL',
                     'price': price,
+                    'entry_date': self.last_buy_date,
+                    'entry_price': self.last_buy_price,
                     'profit': profit,
                     'holding_days': holding_days
                 })
