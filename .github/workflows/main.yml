@@ -11,6 +11,7 @@ jobs:
 
     env:
       SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      GCP_CREDENTIALS_B64: ${{ secrets.GCP_CREDENTIALS_B64 }}      
 
     steps:
       - name: Check out repo
