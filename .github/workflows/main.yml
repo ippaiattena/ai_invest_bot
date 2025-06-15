@@ -29,6 +29,9 @@ jobs:
         run: |
           pip install -r requirements.txt
 
+      - name: Install Japanese font (VL Gothic)
+        run: sudo apt-get install -y fonts-vlgothic
+
       - name: Write GCP credentials file
         run: |
             echo "$GCP_CREDENTIALS_B64" | base64 --decode > credentials.json

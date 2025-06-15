@@ -38,6 +38,11 @@ def plot_metric_trend(df, metric_name, save_path):
     plt.figure(figsize=(10, 6))
     font_prop = set_japanese_font()  # 日本語フォント設定
 
+    if font_prop:
+        plt.rcParams["font.family"] = font_prop.get_name()
+    else:
+        plt.rcParams["font.family"] = "sans-serif"
+
     found_valid = False
     for col in pivot.columns:
         label = str(col)
@@ -45,14 +50,9 @@ def plot_metric_trend(df, metric_name, save_path):
             plt.plot(pivot.index, pivot[col], label=label)
             found_valid = True
 
-    if font_prop:
-        plt.title(f"{metric_name} 推移", fontproperties=font_prop)
-        plt.xlabel("Date", fontproperties=font_prop)
-        plt.ylabel(metric_name, fontproperties=font_prop)
-    else:
-        plt.title(f"{metric_name} 推移")
-        plt.xlabel("Date")
-        plt.ylabel(metric_name)
+    plt.title(f"{metric_name} 推移", fontproperties=font_prop)
+    plt.xlabel("Date", fontproperties=font_prop)
+    plt.ylabel(metric_name, fontproperties=font_prop)
     plt.grid(True)
     
     if found_valid:
@@ -76,8 +76,10 @@ def set_japanese_font():
             "/usr/share/fonts/truetype/vlgothic/VL-Gothic-Regular.ttf",  # VL Gothic
         ]
         font_path = next((fp for fp in font_path_candidates if os.path.exists(fp)), None)
-        if not font_path:
-            print("⚠️ 日本語フォントが見つかりませんでした。英語フォントで代替します。")
+        if font_path:
+            print(f"✅ 日本語フォント使用: {font_path}")
+        else:
+            print("⚠️ 日本語フォントなし（デフォルトフォントで表示）")
             return None
     try:
         font_prop = fm.FontProperties(fname=font_path)
