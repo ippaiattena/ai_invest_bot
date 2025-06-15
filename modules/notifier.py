@@ -10,13 +10,14 @@ from slack_sdk.web import WebClient
 from dotenv import load_dotenv
 import dataframe_image as dfi
 from modules.plotting import plot_metric_trend
+from slack_sdk.errors import SlackApiError
 
 # .envファイルの読み込み（ローカル環境用）
 load_dotenv()
 
 WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
-SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")  # ← 追加
-CLIENT = WebClient(token=SLACK_BOT_TOKEN)       # ← 追加
+SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
+CLIENT = WebClient(token=SLACK_BOT_TOKEN)
 
 def notify(df, backtest_results=None):
 
@@ -200,12 +201,18 @@ def send_chart_to_slack(filepath):
     try:
         title = "📊 バックテストチャート" if "plot" in filepath else "📋 指標サマリー"
 
+        channel_id = os.getenv("SLACK_CHANNEL")
+
+        if not channel_id:
+            print("SlackチャンネルIDが未設定です（環境変数 SLACK_CHANNEL）")
+            return
+        
         with open(filepath, "rb") as f:
             result = CLIENT.files_upload_v2(
                 file=f,
                 filename=os.path.basename(filepath),
                 title="📊 バックテストチャート",
-                channels=["C0918E8KW6P"]  # チャンネル名（#なし、リストで）
+                channels=[channel_id]  # チャンネル名（#なし、リストで）
             )
         if result["ok"]:
             print(f"{title}（{os.path.basename(filepath)}）をSlackに送信しました。")
@@ -224,3 +231,14 @@ def append_to_all_metrics_log(df):
         df = pd.concat([existing, df]).drop_duplicates(subset=["Date", "Ticker"], keep="last")
     df.to_csv(path, index=False)
     print(f"🗂️ 全期間ログ更新: {path}")
+
+def send_trade_notification(side: str, ticker: str, price: float, size: float = 1):
+    """
+    単一の売買をSlackに通知する
+    """
+    text = f":money_with_wings: *{side} {ticker}* @ {price:.2f} (size: {size})"
+    try:
+        response = CLIENT.chat_postMessage(channel=os.getenv("SLACK_CHANNEL"), text=text)
+        print(f"📤 Slack通知送信済み: {text}")
+    except SlackApiError as e:
+        print(f"Slack通知エラー: {e.response['error']}")

@@ -9,4 +9,5 @@ rsi_threshold: 70
 backtest_start: "2023-01-01"
 backtest_end: "2024-01-01"
 
-order_mode: dummy   # dummy | paper | real
+order:
+  mode: paper   # dummy | paper | real

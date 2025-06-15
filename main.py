@@ -2,7 +2,7 @@ import yaml
 from modules import screening, notifier
 from modules.backtest_runner import run_backtest_multiple
 from slack_notifier import send_slack_message
-from modules import trader
+from modules.paper_broker import PaperBroker
 
 # ① 複数銘柄バックテスト実行
 with open("config.yaml", "r") as f:
@@ -36,9 +36,27 @@ if len(summary_lines) > 1:
 # スクリーニング処理
 results = screening.run_screening(tickers, rsi_threshold)
 
+# 発注モード取得
+order_mode = config.get("order").get("mode", "dummy")
+
+# Broker 初期化（paperモード時のみ）
+paper_broker = PaperBroker() if order_mode == "paper" else None
+
 # 自動発注（Signal == "Buy" の銘柄）
 for _, row in results.iterrows():
-    trader.place_order(row["Ticker"], row["Close"], row["Signal"], mode=config.get("order_mode", "dummy"))
+    ticker = row["Ticker"]
+    price = row["Close"]
+    signal = row["Signal"]
+
+    if signal != "Buy":
+        continue
+
+    if order_mode == "dummy":
+        print(f"[DUMMY ORDER] {ticker} を仮想発注: {price}")
+    elif order_mode == "paper":
+        paper_broker.buy(ticker, price)
+    elif order_mode == "real":
+        print(f"[REAL ORDER] 本番注文は未実装: {ticker} @ {price}")
 
 # Slack通知（スクリーニング + トレードサマリー + GSS保存）
 notifier.notify(results, backtest_results=backtest_results)
