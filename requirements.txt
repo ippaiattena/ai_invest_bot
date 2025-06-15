@@ -9,3 +9,4 @@ backtrader
 matplotlib
 slack_sdk
 mplfinance
+python-dotenv
