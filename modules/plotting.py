@@ -1,3 +1,4 @@
+import platform
 import pandas as pd
 import mplfinance as mpf
 import os
@@ -44,9 +45,14 @@ def plot_metric_trend(df, metric_name, save_path):
             plt.plot(pivot.index, pivot[col], label=label)
             found_valid = True
 
-    plt.title(f"{metric_name} 推移", fontproperties=font_prop)
-    plt.xlabel("Date", fontproperties=font_prop)
-    plt.ylabel(metric_name, fontproperties=font_prop)
+    if font_prop:
+        plt.title(f"{metric_name} 推移", fontproperties=font_prop)
+        plt.xlabel("Date", fontproperties=font_prop)
+        plt.ylabel(metric_name, fontproperties=font_prop)
+    else:
+        plt.title(f"{metric_name} 推移")
+        plt.xlabel("Date")
+        plt.ylabel(metric_name)
     plt.grid(True)
     
     if found_valid:
@@ -58,9 +64,24 @@ def plot_metric_trend(df, metric_name, save_path):
     print(f"📊 {metric_name} チャート保存: {save_path}")
 
 def set_japanese_font():
+    system = platform.system()
 
-    # Windows用フォント（OSに応じて切替も可能）
-    font_path = "C:\\Windows\\Fonts\\msgothic.ttc"
-    font_prop = fm.FontProperties(fname=font_path)
-    plt.rcParams["font.family"] = font_prop.get_name()
-    return font_prop
+    if system == "Windows":
+        font_path = "C:\\Windows\\Fonts\\msgothic.ttc"
+    elif system == "Darwin":  # macOS
+        font_path = "/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc"
+    else:  # Linuxなど
+        font_path_candidates = [
+            "/usr/share/fonts/truetype/fonts-japanese-gothic.ttf",  # Ubuntu Japanese
+            "/usr/share/fonts/truetype/vlgothic/VL-Gothic-Regular.ttf",  # VL Gothic
+        ]
+        font_path = next((fp for fp in font_path_candidates if os.path.exists(fp)), None)
+        if not font_path:
+            print("⚠️ 日本語フォントが見つかりませんでした。英語フォントで代替します。")
+            return None
+    try:
+        font_prop = fm.FontProperties(fname=font_path)
+        return font_prop
+    except Exception as e:
+        print(f"⚠️ フォント設定失敗: {e}")
+        return None
