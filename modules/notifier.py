@@ -19,44 +19,45 @@ CLIENT = WebClient(token=SLACK_BOT_TOKEN)       # ← 追加
 
 def notify(df, backtest_results=None):
 
-    message = ""
+    # message = ""
 
-    if df.empty:
-        message += "📉 No Buy signals today."
-    else:
-        buy_df = df[df["Signal"] == "Buy"]
-        others_df = df[df["Signal"] != "Buy"]
+    # if df.empty:
+    #     message += "📉 No Buy signals today."
+    # else:
+    #     buy_df = df[df["Signal"] == "Buy"]
+    #     others_df = df[df["Signal"] != "Buy"]
 
-        if not buy_df.empty:
-            message += "*📈 今日のBuy候補*\n"
-            for _, row in buy_df.iterrows():
-                line = f"- `{row['Ticker']}`: *Buy* @ {row['Close']} (RSI: {row['RSI']})"
-                message += line + "\n"
+    #     if not buy_df.empty:
+    #         message += "*📈 今日のBuy候補*\n"
+    #         for _, row in buy_df.iterrows():
+    #             line = f"- `{row['Ticker']}`: *Buy* @ {row['Close']} (RSI: {row['RSI']})"
+    #             message += line + "\n"
 
-        if not others_df.empty:
-            message += "\n*📊 その他の銘柄*\n"
-            for _, row in others_df.iterrows():
-                line = f"- `{row['Ticker']}`: {row['Signal']} @ {row['Close']} (RSI: {row['RSI']})"
-                message += line + "\n"
+    #     if not others_df.empty:
+    #         message += "\n*📊 その他の銘柄*\n"
+    #         for _, row in others_df.iterrows():
+    #             line = f"- `{row['Ticker']}`: {row['Signal']} @ {row['Close']} (RSI: {row['RSI']})"
+    #             message += line + "\n"
 
-    # --- 売買ログが存在すればトレードサマリーを追記 ---
-    trade_log_path = "data/backtest_trades_AAPL_2023-01-01_to_2024-01-01.csv"
-    if os.path.exists(trade_log_path):
-        trade_df = pd.read_csv(trade_log_path)
-        sell_df = trade_df[trade_df['type'] == 'SELL'].dropna()
-        if not sell_df.empty:
-            total = len(sell_df)
-            wins = (sell_df['profit'] > 0).sum()
-            avg_profit = sell_df['profit'].mean()
-            avg_holding = sell_df['holding_days'].mean()
-            summary = (
-                "\n:chart_with_upwards_trend: *トレードサマリー*\n"
-                f"- 総トレード数       : {total}\n"
-                f"- 勝率               : {wins / total * 100:.1f}%\n"
-                f"- 平均損益           : {avg_profit:.2f}\n"
-                f"- 平均保有期間（日） : {avg_holding:.1f}日"
-            )
-            message += summary
+    # # --- 売買ログが存在すればトレードサマリーを追記 ---
+    # trade_log_path = "data/backtest_trades_AAPL_2023-01-01_to_2024-01-01.csv"
+    # if os.path.exists(trade_log_path):
+    #     trade_df = pd.read_csv(trade_log_path)
+    #     sell_df = trade_df[trade_df['type'] == 'SELL'].dropna()
+    #     if not sell_df.empty:
+    #         total = len(sell_df)
+    #         wins = (sell_df['profit'] > 0).sum()
+    #         avg_profit = sell_df['profit'].mean()
+    #         avg_holding = sell_df['holding_days'].mean()
+    #         summary = (
+    #             "\n:chart_with_upwards_trend: *トレードサマリー*\n"
+    #             f"- 総トレード数       : {total}\n"
+    #             f"- 勝率               : {wins / total * 100:.1f}%\n"
+    #             f"- 平均損益           : {avg_profit:.2f}\n"
+    #             f"- 平均保有期間（日） : {avg_holding:.1f}日"
+    #         )
+    #         message += summary
+    message = build_slack_message(df, backtest_results)
 
     payload = {"text": message}
     response = requests.post(WEBHOOK_URL, json=payload)
@@ -82,6 +83,43 @@ def notify(df, backtest_results=None):
     chart_path = f"data/backtest_plot_mpl_AAPL.png"
     if os.path.exists(chart_path):
         send_chart_to_slack(chart_path)
+
+    append_to_all_metrics_log(df)
+
+def build_slack_message(df, backtest_results):
+    lines = [":robot_face: *AI投資Bot通知*"]
+
+    # --- シグナル ---
+    if df.empty:
+        lines.append("📉 *本日Buyシグナルはありません*")
+    else:
+        buy_df = df[df["Signal"] == "Buy"]
+        others_df = df[df["Signal"] != "Buy"]
+
+        if not buy_df.empty:
+            lines.append("\n📈 *本日のBuy候補*")
+            for _, row in buy_df.iterrows():
+                lines.append(f"- `{row['Ticker']}`: *Buy* @ {row['Close']} (RSI: {row['RSI']})")
+
+        if not others_df.empty:
+            lines.append("\n📊 *その他のシグナル*")
+            for _, row in others_df.iterrows():
+                lines.append(f"- `{row['Ticker']}`: {row['Signal']} @ {row['Close']} (RSI: {row['RSI']})")
+
+    # --- バックテスト要約 ---
+    if backtest_results:
+        lines.append("\n📋 *バックテスト評価サマリー*")
+        for r in backtest_results:
+            m = r.get("metrics", {})
+            if m:
+                lines.append(
+                    f"- {r['ticker']}: 勝率 {m.get('win_rate', 0):.1f}%, "
+                    f"CAGR {m.get('cagr', 0):.2%}, "
+                    f"最大DD {m.get('max_drawdown', 0):.2f}%"
+                )
+
+    lines.append("\n🔗 *詳細CSV・チャートは添付ファイルを参照*")
+    return "\n".join(lines)
 
 def save_to_csv(df):
     if df.empty:
@@ -199,3 +237,14 @@ def send_chart_to_slack(filepath):
             print(f"Slackファイル送信失敗: {result['error']}")
     except Exception as e:
         print(f"チャート画像の送信中にエラー発生: {e}")
+
+def append_to_all_metrics_log(df):
+    """日付×銘柄で重複排除して backtest_metrics_all.csv に追記"""
+    if df is None or df.empty:
+        return
+    path = "data/backtest_metrics_all.csv"
+    if os.path.exists(path):
+        existing = pd.read_csv(path)
+        df = pd.concat([existing, df]).drop_duplicates(subset=["Date", "Ticker"], keep="last")
+    df.to_csv(path, index=False)
+    print(f"🗂️ 全期間ログ更新: {path}")
