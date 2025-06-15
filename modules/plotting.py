@@ -2,6 +2,7 @@ import pandas as pd
 import mplfinance as mpf
 import os
 import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
 
 def plot_trade_chart(df, trade_log, ticker, save_path):
     df = df.copy()
@@ -34,14 +35,32 @@ def plot_metric_trend(df, metric_name, save_path):
     pivot = df.pivot_table(index="Date", columns="Ticker", values=metric_name)
 
     plt.figure(figsize=(10, 6))
+    font_prop = set_japanese_font()  # 日本語フォント設定
+
+    found_valid = False
     for col in pivot.columns:
-        plt.plot(pivot.index, pivot[col], label=col)
-    plt.title(f"{metric_name} 推移")
-    plt.xlabel("Date")
-    plt.ylabel(metric_name)
+        label = str(col)
+        if label and not label.startswith("_") and pivot[col].notna().any():
+            plt.plot(pivot.index, pivot[col], label=label)
+            found_valid = True
+
+    plt.title(f"{metric_name} 推移", fontproperties=font_prop)
+    plt.xlabel("Date", fontproperties=font_prop)
+    plt.ylabel(metric_name, fontproperties=font_prop)
     plt.grid(True)
-    plt.legend()
+    
+    if found_valid:
+        plt.legend()
+
     plt.tight_layout()
     plt.savefig(save_path)
     plt.close()
     print(f"📊 {metric_name} チャート保存: {save_path}")
+
+def set_japanese_font():
+
+    # Windows用フォント（OSに応じて切替も可能）
+    font_path = "C:\\Windows\\Fonts\\msgothic.ttc"
+    font_prop = fm.FontProperties(fname=font_path)
+    plt.rcParams["font.family"] = font_prop.get_name()
+    return font_prop

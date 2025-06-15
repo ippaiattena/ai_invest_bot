@@ -2,6 +2,7 @@ import yaml
 from modules import screening, notifier
 from modules.backtest_runner import run_backtest_multiple
 from slack_notifier import send_slack_message
+from modules import trader
 
 # ① 複数銘柄バックテスト実行
 with open("config.yaml", "r") as f:
@@ -34,6 +35,10 @@ if len(summary_lines) > 1:
 
 # スクリーニング処理
 results = screening.run_screening(tickers, rsi_threshold)
+
+# 自動発注（Signal == "Buy" の銘柄）
+for _, row in results.iterrows():
+    trader.place_order(row["Ticker"], row["Close"], row["Signal"], mode=config.get("order_mode", "dummy"))
 
 # Slack通知（スクリーニング + トレードサマリー + GSS保存）
 notifier.notify(results, backtest_results=backtest_results)
