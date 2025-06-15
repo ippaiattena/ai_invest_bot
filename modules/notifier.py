@@ -8,6 +8,7 @@ import mimetypes
 import slack_sdk
 from slack_sdk.web import WebClient
 from dotenv import load_dotenv
+import dataframe_image as dfi
 
 # .envファイルの読み込み（ローカル環境用）
 load_dotenv()
@@ -16,7 +17,7 @@ WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")  # ← 追加
 CLIENT = WebClient(token=SLACK_BOT_TOKEN)       # ← 追加
 
-def notify(df):
+def notify(df, backtest_results=None):
 
     message = ""
 
@@ -67,6 +68,15 @@ def notify(df):
 
     save_to_csv(df)    # 不要なら消して良い
     save_to_sheet(df)
+    
+    # バックテスト結果があれば GSS 保存
+    if backtest_results:
+        save_backtest_metrics_to_sheet(backtest_results)
+
+    # 評価指標をCSV保存＆Slack送信
+    csv_path = save_backtest_metrics_csv(backtest_results)
+    if csv_path:
+        send_metrics_csv_as_image(csv_path)
 
     # チャート画像があればSlackに送信
     chart_path = f"data/backtest_plot_mpl_AAPL.png"
@@ -81,6 +91,41 @@ def save_to_csv(df):
     filename = f"data/screening_log_{today_str}.csv"
     df.to_csv(filename, index=False)
     print(f"CSV保存完了: {filename}")
+
+def save_backtest_metrics_csv(results):
+    if not results:
+        return
+
+    today = datetime.today().strftime("%Y-%m-%d")
+    rows = []
+    for r in results:
+        m = r["metrics"]
+        rows.append({
+            "Date": today,
+            "Ticker": r["ticker"],
+            "Total Return": m.get("total_return"),
+            "CAGR": m.get("cagr"),
+            "Sharpe": m.get("sharpe"),
+            "Max Drawdown": m.get("max_drawdown"),
+            "Avg Profit": m.get("avg_profit"),
+            "Win Rate": m.get("win_rate"),
+            "Avg Hold Days": m.get("avg_hold_days"),
+        })
+    df = pd.DataFrame(rows)
+    os.makedirs("data", exist_ok=True)
+    csv_path = f"data/backtest_metrics_{today}.csv"
+    df.to_csv(csv_path, index=False)
+    print(f"📄 指標CSVを保存しました: {csv_path}")
+    return csv_path
+
+def send_metrics_csv_as_image(csv_path):
+    try:
+        df = pd.read_csv(csv_path)
+        img_path = csv_path.replace(".csv", ".png")
+        dfi.export(df, img_path, table_conversion="matplotlib")
+        send_chart_to_slack(img_path)
+    except Exception as e:
+        print(f"📤 CSV画像化または送信失敗: {e}")
 
 def save_to_sheet(df):
     if df.empty:
@@ -102,8 +147,45 @@ def save_to_sheet(df):
     # 書き込み（1行目はヘッダーなので +1 して新しい行に追加）
     set_with_dataframe(sheet, df, row=existing_rows+1, include_column_header=existing_rows == 0)
 
+def save_backtest_metrics_to_sheet(results):
+    if not results:
+        return
+
+    # Google Sheets 認証
+    gc = gspread.service_account(filename='credentials.json')
+    SPREADSHEET_ID = '1gFROcwTXReZVnM3XWKNoRDsiejfkSNtwoQbB8SMsePs'
+    try:
+        sheet = gc.open_by_key(SPREADSHEET_ID).worksheet("backtest_metrics")
+    except gspread.exceptions.WorksheetNotFound:
+        # なければ作成（末尾に追加）
+        spreadsheet = gc.open_by_key(SPREADSHEET_ID)
+        sheet = spreadsheet.add_worksheet(title="backtest_metrics", rows="1000", cols="20")
+
+    today = datetime.today().strftime("%Y-%m-%d")
+    rows = []
+
+    for result in results:
+        m = result.get("metrics", {})
+        rows.append({
+            "Date": today,
+            "Ticker": result["ticker"],
+            "Total Return": m.get("total_return"),
+            "CAGR": m.get("cagr"),
+            "Sharpe": m.get("sharpe"),
+            "Max Drawdown": m.get("max_drawdown"),
+            "Avg Profit": m.get("avg_profit"),
+            "Win Rate": m.get("win_rate"),
+            "Avg Hold Days": m.get("avg_hold_days"),
+        })
+
+    df = pd.DataFrame(rows)
+    existing_rows = len(sheet.get_all_values())
+    set_with_dataframe(sheet, df, row=existing_rows+1, include_column_header=existing_rows == 0)
+
 def send_chart_to_slack(filepath):
     try:
+        title = "📊 バックテストチャート" if "plot" in filepath else "📋 指標サマリー"
+
         with open(filepath, "rb") as f:
             result = CLIENT.files_upload_v2(
                 file=f,
@@ -112,7 +194,7 @@ def send_chart_to_slack(filepath):
                 channels=["C0918E8KW6P"]  # チャンネル名（#なし、リストで）
             )
         if result["ok"]:
-            print("チャート画像をSlackに送信しました。")
+            print(f"{title}（{os.path.basename(filepath)}）をSlackに送信しました。")
         else:
             print(f"Slackファイル送信失敗: {result['error']}")
     except Exception as e:

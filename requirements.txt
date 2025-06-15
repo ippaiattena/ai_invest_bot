@@ -10,3 +10,4 @@ matplotlib
 slack_sdk
 mplfinance
 python-dotenv
+dataframe-image
