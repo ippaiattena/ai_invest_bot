@@ -14,6 +14,7 @@ jobs:
       GCP_CREDENTIALS_B64: ${{ secrets.GCP_CREDENTIALS_B64 }}
       SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
       SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+      SLACK_CHANNEL: ${{ secrets.SLACK_CHANNEL }}
 
     steps:
       - name: Check out repo
