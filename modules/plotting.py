@@ -1,6 +1,7 @@
 import pandas as pd
 import mplfinance as mpf
 import os
+import matplotlib.pyplot as plt
 
 def plot_trade_chart(df, trade_log, ticker, save_path):
     df = df.copy()
@@ -27,3 +28,20 @@ def plot_trade_chart(df, trade_log, ticker, save_path):
     os.makedirs(os.path.dirname(save_path), exist_ok=True)
     mpf.plot(df, type='candle', style='charles', addplot=apds, volume=False, savefig=save_path)
     print(f"チャート画像を保存しました: {save_path}")
+
+def plot_metric_trend(df, metric_name, save_path):
+    df["Date"] = pd.to_datetime(df["Date"])
+    pivot = df.pivot_table(index="Date", columns="Ticker", values=metric_name)
+
+    plt.figure(figsize=(10, 6))
+    for col in pivot.columns:
+        plt.plot(pivot.index, pivot[col], label=col)
+    plt.title(f"{metric_name} 推移")
+    plt.xlabel("Date")
+    plt.ylabel(metric_name)
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(save_path)
+    plt.close()
+    print(f"📊 {metric_name} チャート保存: {save_path}")

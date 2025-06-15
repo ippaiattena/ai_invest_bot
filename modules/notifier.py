@@ -9,6 +9,7 @@ import slack_sdk
 from slack_sdk.web import WebClient
 from dotenv import load_dotenv
 import dataframe_image as dfi
+from modules.plotting import plot_metric_trend
 
 # .envファイルの読み込み（ローカル環境用）
 load_dotenv()
@@ -19,44 +20,6 @@ CLIENT = WebClient(token=SLACK_BOT_TOKEN)       # ← 追加
 
 def notify(df, backtest_results=None):
 
-    # message = ""
-
-    # if df.empty:
-    #     message += "📉 No Buy signals today."
-    # else:
-    #     buy_df = df[df["Signal"] == "Buy"]
-    #     others_df = df[df["Signal"] != "Buy"]
-
-    #     if not buy_df.empty:
-    #         message += "*📈 今日のBuy候補*\n"
-    #         for _, row in buy_df.iterrows():
-    #             line = f"- `{row['Ticker']}`: *Buy* @ {row['Close']} (RSI: {row['RSI']})"
-    #             message += line + "\n"
-
-    #     if not others_df.empty:
-    #         message += "\n*📊 その他の銘柄*\n"
-    #         for _, row in others_df.iterrows():
-    #             line = f"- `{row['Ticker']}`: {row['Signal']} @ {row['Close']} (RSI: {row['RSI']})"
-    #             message += line + "\n"
-
-    # # --- 売買ログが存在すればトレードサマリーを追記 ---
-    # trade_log_path = "data/backtest_trades_AAPL_2023-01-01_to_2024-01-01.csv"
-    # if os.path.exists(trade_log_path):
-    #     trade_df = pd.read_csv(trade_log_path)
-    #     sell_df = trade_df[trade_df['type'] == 'SELL'].dropna()
-    #     if not sell_df.empty:
-    #         total = len(sell_df)
-    #         wins = (sell_df['profit'] > 0).sum()
-    #         avg_profit = sell_df['profit'].mean()
-    #         avg_holding = sell_df['holding_days'].mean()
-    #         summary = (
-    #             "\n:chart_with_upwards_trend: *トレードサマリー*\n"
-    #             f"- 総トレード数       : {total}\n"
-    #             f"- 勝率               : {wins / total * 100:.1f}%\n"
-    #             f"- 平均損益           : {avg_profit:.2f}\n"
-    #             f"- 平均保有期間（日） : {avg_holding:.1f}日"
-    #         )
-    #         message += summary
     message = build_slack_message(df, backtest_results)
 
     payload = {"text": message}
@@ -78,13 +41,26 @@ def notify(df, backtest_results=None):
     csv_path = save_backtest_metrics_csv(backtest_results)
     if csv_path:
         send_metrics_csv_as_image(csv_path)
+        # 指標CSVを全期間ログに追記
+        metrics_df = pd.read_csv(csv_path)
+        append_to_all_metrics_log(metrics_df)
 
     # チャート画像があればSlackに送信
     chart_path = f"data/backtest_plot_mpl_AAPL.png"
     if os.path.exists(chart_path):
         send_chart_to_slack(chart_path)
 
-    append_to_all_metrics_log(df)
+    # チャート画像を時系列で生成・通知
+    try:
+        all_path = "data/backtest_metrics_all.csv"
+        if os.path.exists(all_path):
+            all_df = pd.read_csv(all_path)
+            for metric in ["CAGR", "Sharpe", "Max Drawdown"]:
+                chart_path = f"data/trend_{metric.replace(' ', '_')}.png"
+                plot_metric_trend(all_df, metric, chart_path)
+                send_chart_to_slack(chart_path)
+    except Exception as e:
+        print(f"📉 指標推移グラフ生成失敗: {e}")
 
 def build_slack_message(df, backtest_results):
     lines = [":robot_face: *AI投資Bot通知*"]
