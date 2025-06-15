@@ -196,3 +196,7 @@ cython_debug/
 # data
 #  This directory is used to store data files, such as backtest results and logs.
 data/
+
+# credentials
+#  This file is used to store sensitive information such as API keys and secrets.
+credentials.json
