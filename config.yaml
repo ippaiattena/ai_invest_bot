@@ -11,3 +11,4 @@ backtest_end: "2024-01-01"
 
 order:
   mode: paper   # dummy | paper | real
+  exit_rule: rsi  # rsi | なし（将来: hold_days, stop_loss などもOK）

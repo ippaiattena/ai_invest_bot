@@ -4,9 +4,10 @@ from modules.backtest_runner import run_backtest_multiple
 from slack_notifier import send_slack_message
 from modules.paper_broker import PaperBroker
 from exit_rules import exit_by_rsi
+from exit_rules import EXIT_RULES
 
 # ① 複数銘柄バックテスト実行
-with open("config.yaml", "r") as f:
+with open("config.yaml", "r", encoding="utf-8") as f:
     config = yaml.safe_load(f)
 
 tickers = config["tickers"]
@@ -39,6 +40,8 @@ results = screening.run_screening(tickers, rsi_threshold)
 
 # 発注モード取得
 order_mode = config.get("order").get("mode", "dummy")
+exit_rule_name = config.get("order", {}).get("exit_rule", "rsi")
+exit_rule_func = EXIT_RULES.get(exit_rule_name)
 
 # Broker 初期化（paperモード時のみ）
 paper_broker = None
@@ -50,7 +53,10 @@ if order_mode in ["dummy", "paper", "real"]:
     broker = paper_broker if order_mode == "paper" else PaperBroker(mode=order_mode)
     broker.process_signals(results)
     if order_mode == "paper":
-        broker.apply_exit_strategy(results, rule_func=lambda df: exit_by_rsi(df, rsi_threshold))
+        if exit_rule_func:
+            broker.apply_exit_strategy(results, rule_func=lambda df: exit_rule_func(df, rsi_threshold))
+        else:
+            broker.apply_exit_strategy(results, rule_func=None)
 
 # Slack通知（スクリーニング + トレードサマリー + GSS保存）
 notifier.notify(results, backtest_results=backtest_results, paper_broker=paper_broker)

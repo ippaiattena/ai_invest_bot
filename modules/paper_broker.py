@@ -33,7 +33,7 @@ class PaperBroker:
             elif self.mode == "real":
                 print(f"[REAL ORDER] {signal} {ticker} @ {price}（未実装）")
 
-    def apply_exit_strategy(self, screening_df, rule_func=None):
+    def apply_exit_strategy(self, screening_df, rule_func: callable = None):
         """
         与えられたルール関数に従ってExitシグナルを判定し、売却を実行。
         rule_func: Callable(screening_df) -> dict[ticker: bool]
