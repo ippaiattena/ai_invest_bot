@@ -2,6 +2,7 @@ import os
 import json
 from datetime import datetime
 import pytz
+import yfinance as yf
 
 JST = pytz.timezone('Asia/Tokyo')
 
@@ -10,6 +11,14 @@ class PaperWallet:
         self.cash = 1_000_000
         self.holdings = {}
         self.holding_dates = {}
+
+    def reset_wallet(self):
+        """ウォレットを初期状態に戻す"""
+        self.cash = 1_000_000
+        self.holdings = {}
+        self.holding_dates = {}
+        self.save()
+        print("🔁 Paper wallet を初期化しました。")
 
     def get_position(self, ticker):
         """指定ティッカーの保有数を返す（未保有なら0）"""
@@ -105,8 +114,16 @@ class PaperWallet:
         }
 
     def get_latest_price(self, ticker):
-        # TODO: 現状はplaceholder（あとでyfinance等で取得するよう拡張）
-        return 100.0
+        try:
+            data = yf.Ticker(ticker).history(period="1d")
+            if not data.empty:
+                return data["Close"].iloc[-1]
+            else:
+                print(f"⚠️ {ticker} の価格データが取得できませんでした（空のデータ）")
+                return 100.0
+        except Exception as e:
+            print(f"⚠️ {ticker} の価格取得中にエラー発生: {e}")
+            return 100.0
 
     def get_portfolio_value(self, price_lookup=None):
         """

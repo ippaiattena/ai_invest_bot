@@ -1,3 +1,4 @@
+import sys
 import yaml
 from modules import screening, notifier
 from modules.backtest_runner import run_backtest_multiple
@@ -5,6 +6,8 @@ from slack_notifier import send_slack_message
 from modules.paper_broker import PaperBroker
 from exit_rules import exit_by_rsi
 from exit_rules import EXIT_RULES
+
+RESET_WALLET = "--reset" in sys.argv
 
 # ① 複数銘柄バックテスト実行
 with open("config.yaml", "r", encoding="utf-8") as f:
@@ -47,6 +50,8 @@ exit_rule_func = EXIT_RULES.get(exit_rule_name)
 paper_broker = None
 if order_mode == "paper":
     paper_broker = PaperBroker()
+    if RESET_WALLET:
+        paper_broker.wallet.reset_wallet()
 
 # 自動売買シグナル処理
 if order_mode in ["dummy", "paper", "real"]:
