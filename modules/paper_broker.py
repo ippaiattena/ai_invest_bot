@@ -33,18 +33,20 @@ class PaperBroker:
             elif self.mode == "real":
                 print(f"[REAL ORDER] {signal} {ticker} @ {price}（未実装）")
 
-    def apply_exit_strategy(self, screening_df, rsi_threshold=70):
+    def apply_exit_strategy(self, screening_df, rule_func=None):
         """
-        RSIが閾値を超えていたら売却。
+        与えられたルール関数に従ってExitシグナルを判定し、売却を実行。
+        rule_func: Callable(screening_df) -> dict[ticker: bool]
         """
+        if not rule_func:
+            return
+
+        exit_signals = rule_func(screening_df)
         positions = self.get_positions()
         for ticker, info in positions.items():
-            current_price = info["price"]
-            match = screening_df[screening_df["Ticker"] == ticker]
-            if not match.empty:
-                rsi = match["RSI"].values[0]
-                if rsi > rsi_threshold:
-                    self.sell(ticker, current_price)
+            if exit_signals.get(ticker):
+                current_price = info["price"]
+                self.sell(ticker, current_price)
 
     def get_portfolio_summary(self):
         """

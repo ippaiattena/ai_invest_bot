@@ -3,6 +3,7 @@ from modules import screening, notifier
 from modules.backtest_runner import run_backtest_multiple
 from slack_notifier import send_slack_message
 from modules.paper_broker import PaperBroker
+from exit_rules import exit_by_rsi
 
 # ① 複数銘柄バックテスト実行
 with open("config.yaml", "r") as f:
@@ -49,7 +50,7 @@ if order_mode in ["dummy", "paper", "real"]:
     broker = paper_broker if order_mode == "paper" else PaperBroker(mode=order_mode)
     broker.process_signals(results)
     if order_mode == "paper":
-        broker.apply_exit_strategy(results)
+        broker.apply_exit_strategy(results, rule_func=lambda df: exit_by_rsi(df, rsi_threshold))
 
 # Slack通知（スクリーニング + トレードサマリー + GSS保存）
 notifier.notify(results, backtest_results=backtest_results, paper_broker=paper_broker)
