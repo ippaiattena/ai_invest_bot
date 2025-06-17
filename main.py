@@ -40,26 +40,25 @@ results = screening.run_screening(tickers, rsi_threshold)
 order_mode = config.get("order").get("mode", "dummy")
 
 # Broker 初期化（paperモード時のみ）
-paper_broker = PaperBroker() if order_mode == "paper" else None
+paper_broker = None
+if order_mode == "paper":
+    paper_broker = PaperBroker()
 
-# 自動発注（Signal == "Buy" の銘柄）
-for _, row in results.iterrows():
-    ticker = row["Ticker"]
-    price = row["Close"]
-    signal = row["Signal"]
-
-    if signal != "Buy":
-        continue
-
-    if order_mode == "dummy":
-        print(f"[DUMMY ORDER] {ticker} を仮想発注: {price}")
-    elif order_mode == "paper":
-        paper_broker.buy(ticker, price)
-    elif order_mode == "real":
-        print(f"[REAL ORDER] 本番注文は未実装: {ticker} @ {price}")
+# 自動売買シグナル処理
+if order_mode in ["dummy", "paper", "real"]:
+    broker = paper_broker if order_mode == "paper" else PaperBroker(mode=order_mode)
+    broker.process_signals(results)
+    if order_mode == "paper":
+        broker.apply_exit_strategy(results)
 
 # Slack通知（スクリーニング + トレードサマリー + GSS保存）
-notifier.notify(results, backtest_results=backtest_results)
+notifier.notify(results, backtest_results=backtest_results, paper_broker=paper_broker)
+
+# 保有資産サマリー出力（paperモード時のみ）
+if order_mode == "paper":
+    summary = paper_broker.get_portfolio_summary()
+    print("\n=== 💼 保有資産サマリー ===")
+    print(paper_broker.format_portfolio_summary())
 
 # 動作確認用のSlack通知（なくてもOK）
 send_slack_message("✅ Slack通知テスト：Botは正常に動いています。")

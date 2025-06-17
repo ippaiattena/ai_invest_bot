@@ -36,8 +36,10 @@ def run_screening(tickers, rsi_threshold=70):
         rsi_val = float(latest['RSI'].iloc[0])
         close_price = float(latest['Close'].iloc[0])
 
-        # 条件：上昇トレンド＋買われすぎでない
-        if sma20 > sma50 and rsi_val < 70:
+        # Signal判定ロジック
+        if rsi_val > rsi_threshold:
+            signal = 'Sell'  # Exit条件：RSI過熱
+        elif sma20 > sma50 and rsi_val < rsi_threshold:
             signal = 'Buy'
         else:
             signal = 'Hold'

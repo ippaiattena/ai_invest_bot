@@ -19,7 +19,7 @@ WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 CLIENT = WebClient(token=SLACK_BOT_TOKEN)
 
-def notify(df, backtest_results=None):
+def notify(df, backtest_results=None, paper_broker=None):
 
     message = build_slack_message(df, backtest_results)
 
@@ -62,6 +62,15 @@ def notify(df, backtest_results=None):
                 send_chart_to_slack(chart_path)
     except Exception as e:
         print(f"📉 指標推移グラフ生成失敗: {e}")
+
+    # --- 保有資産サマリー（paperモードのみ） ---
+    if paper_broker:
+        try:
+            summary_text = paper_broker.format_portfolio_summary()
+            payload = {"text": summary_text}
+            requests.post(WEBHOOK_URL, json=payload)
+        except Exception as e:
+            print(f"📤 Slack資産サマリー通知失敗: {e}")
 
 def build_slack_message(df, backtest_results):
     lines = [":robot_face: *AI投資Bot通知*"]

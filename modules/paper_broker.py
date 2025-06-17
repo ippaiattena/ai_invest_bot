@@ -1,47 +1,78 @@
-import os
-import json
-from datetime import datetime
 from modules.notifier import send_trade_notification
 
 class PaperBroker:
-    def __init__(self, log_dir="paper_trades"):
-        self.log_dir = log_dir
-        os.makedirs(self.log_dir, exist_ok=True)
-        self.positions = {}  # 現在の保有株（ティッカー → 平均取得単価）
+    def __init__(self, mode="paper"):
+        from modules.paper_wallet import PaperWallet
+        self.wallet = PaperWallet()
+        self.mode = mode  # "dummy", "paper", "real"
 
     def buy(self, ticker, price, size=1):
-        self.positions[ticker] = {"price": price, "size": size}
-        self._log_trade("BUY", ticker, price, size)
+        self.wallet.buy(ticker, price, size)
+        send_trade_notification("BUY", ticker, price, size)
 
     def sell(self, ticker, price, size=1):
-        if ticker not in self.positions:
-            print(f"[WARN] {ticker} は保有していません")
-            return
-        self._log_trade("SELL", ticker, price, size)
-        del self.positions[ticker]
+        self.wallet.sell(ticker, price, size)
+        send_trade_notification("SELL", ticker, price, size)
 
-    def _log_trade(self, side, ticker, price, size):
-        trade = {
-            "time": datetime.now().isoformat(),
-            "side": side,
-            "ticker": ticker,
-            "price": price,
-            "size": size,
+    def get_positions(self):
+        """現在のポジションを 'ticker → dict(price, size)' の形式で返す"""
+        return self.wallet.get_detailed_holdings()
+    
+    def process_signals(self, df):
+        for _, row in df.iterrows():
+            ticker = row["Ticker"]
+            price = row["Close"]
+            signal = row["Signal"]
+            if self.mode == "dummy":
+                print(f"[DUMMY ORDER] {signal} {ticker} @ {price}")
+            elif self.mode == "paper":
+                if signal == "Buy":
+                    self.buy(ticker, price)
+                elif signal == "Sell":
+                    self.sell(ticker, price)
+            elif self.mode == "real":
+                print(f"[REAL ORDER] {signal} {ticker} @ {price}（未実装）")
+
+    def apply_exit_strategy(self, screening_df, rsi_threshold=70):
+        """
+        RSIが閾値を超えていたら売却。
+        """
+        positions = self.get_positions()
+        for ticker, info in positions.items():
+            current_price = info["price"]
+            match = screening_df[screening_df["Ticker"] == ticker]
+            if not match.empty:
+                rsi = match["RSI"].values[0]
+                if rsi > rsi_threshold:
+                    self.sell(ticker, current_price)
+
+    def get_portfolio_summary(self):
+        """
+        現金・株式評価額・総資産を含むサマリーを返す
+        """
+        holdings = self.wallet.get_detailed_holdings()
+        cash = self.wallet.cash
+        stock_value = sum(info["price"] * info["size"] for info in holdings.values())
+        total_value = cash + stock_value
+
+        return {
+            "cash": cash,
+            "stock_value": stock_value,
+            "total_value": total_value,
+            "details": holdings
         }
-        today = datetime.today().strftime("%Y-%m-%d")
-        filepath = os.path.join(self.log_dir, f"{today}.json")
 
-        trades = []
-        if os.path.exists(filepath):
-            with open(filepath, "r") as f:
-                trades = json.load(f)
-
-        trades.append(trade)
-        with open(filepath, "w") as f:
-            json.dump(trades, f, indent=2)
-
-        print(f"[PAPER ORDER] {side} {ticker} @ {price} size={size}")
-
-        # Slack通知追加
-        send_trade_notification(side, ticker, price, size)
-        
+    def format_portfolio_summary(self) -> str:
+        summary = self.get_portfolio_summary()
+        lines = []
+        lines.append("💼 *保有資産サマリー*")
+        lines.append(f"・総資産: ¥{summary['total_value']:,.0f}")
+        lines.append(f"　├ 現金       : ¥{summary['cash']:,.0f}")
+        lines.append(f"　└ 株式評価額 : ¥{summary['stock_value']:,.0f}")
+        if summary["details"]:
+            lines.append("　└ 保有内訳:")
+            for ticker, info in summary["details"].items():
+                lines.append(f"　   - `{ticker}`: {info['size']}株 @ ¥{info['price']:.2f} → ¥{info['value']:,.0f}")
+        else:
+            lines.append("　（株式保有なし）")
+        return "\n".join(lines)
