@@ -3,7 +3,7 @@ import yaml
 from modules import screening, notifier
 from modules.backtest_runner import run_backtest_multiple
 from slack_notifier import send_slack_message
-from modules.paper_broker import PaperBroker
+from broker_factory import create_broker
 from exit_rules import exit_by_rsi
 from exit_rules import EXIT_RULES
 
@@ -46,31 +46,27 @@ order_mode = config.get("order").get("mode", "dummy")
 exit_rule_name = config.get("order", {}).get("exit_rule", "rsi")
 exit_rule_func = EXIT_RULES.get(exit_rule_name)
 
-# Broker 初期化（paperモード時のみ）
-paper_broker = None
-if order_mode == "paper":
-    paper_broker = PaperBroker()
-    if RESET_WALLET:
-        paper_broker.wallet.reset_wallet()
+# Broker 初期化（共通）
+broker = create_broker(order_mode)
+if RESET_WALLET and hasattr(broker, "wallet"):
+    broker.wallet.reset_wallet()
 
 # 自動売買シグナル処理
-if order_mode in ["dummy", "paper", "real"]:
-    broker = paper_broker if order_mode == "paper" else PaperBroker(mode=order_mode)
-    broker.process_signals(results)
-    if order_mode == "paper":
-        if exit_rule_func:
-            broker.apply_exit_strategy(results, rule_func=lambda df: exit_rule_func(df, rsi_threshold))
-        else:
-            broker.apply_exit_strategy(results, rule_func=None)
+broker.process_signals(results)
+if order_mode == "paper":
+    if exit_rule_func:
+        broker.apply_exit_strategy(results, rule_func=lambda df: exit_rule_func(df, rsi_threshold))
+    else:
+        broker.apply_exit_strategy(results, rule_func=None)
 
 # Slack通知（スクリーニング + トレードサマリー + GSS保存）
-notifier.notify(results, backtest_results=backtest_results, paper_broker=paper_broker)
+notifier.notify(results, backtest_results=backtest_results, paper_broker=broker if order_mode == "paper" else None)
 
 # 保有資産サマリー出力（paperモード時のみ）
 if order_mode == "paper":
-    summary = paper_broker.get_portfolio_summary()
+    summary = broker.get_portfolio_summary()
     print("\n=== 💼 保有資産サマリー ===")
-    print(paper_broker.format_portfolio_summary())
+    print(broker.format_portfolio_summary())
 
 # 動作確認用のSlack通知（なくてもOK）
 send_slack_message("✅ Slack通知テスト：Botは正常に動いています。")
