@@ -3,9 +3,8 @@ import yaml
 from modules import screening, notifier
 from modules.backtest_runner import run_backtest_multiple
 from slack_notifier import send_slack_message
-from broker_factory import create_broker
-from exit_rules import exit_by_rsi
 from exit_rules import EXIT_RULES
+from modules.broker_factory import get_broker
 
 RESET_WALLET = "--reset" in sys.argv
 
@@ -47,7 +46,7 @@ exit_rule_name = config.get("order", {}).get("exit_rule", "rsi")
 exit_rule_func = EXIT_RULES.get(exit_rule_name)
 
 # Broker 初期化（共通）
-broker = create_broker(order_mode)
+broker = get_broker(order_mode)
 if RESET_WALLET and hasattr(broker, "wallet"):
     broker.wallet.reset_wallet()
 
