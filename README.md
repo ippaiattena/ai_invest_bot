@@ -21,14 +21,14 @@
 
 - Python（pandas, yfinance, matplotlib, NumPy）
 - Slack API（通知用）
-- GitHub Actions（今後自動実行で活用予定）
+- GitHub Actions
 
 ## ✅ 現在の状態
 
 - ルールベースの売買ロジックとバックテスト機能を実装済み
 - Slack通知による自動出力が稼働中
 - 今後のロードマップ：
-  - GitHub Actionsによるスケジューラ統合
+  - 海外ブローカーAPI実装（Alpaca 等を検討中）
   - 機械学習モデルの導入（LightGBM/強化学習など）
   - UI/UXの可視化・汎用化対応
 
