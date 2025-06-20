@@ -1,0 +1,6 @@
+{
+  "python.defaultInterpreterPath": ".venv/Scripts/python.exe",
+  "editor.formatOnSave": true,
+  "python.linting.enabled": true,
+  "python.linting.pylintEnabled": true
+}
