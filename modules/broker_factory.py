@@ -1,4 +1,4 @@
-from modules.local_broker import PaperBroker
+from modules.local_broker import LocalBroker
 from modules.kabucom_broker import KabucomBroker
 from modules.broker_base import BrokerBase
 
@@ -12,9 +12,9 @@ def get_broker(mode: str, reset_wallet: bool = False) -> BrokerBase:
     mode = mode.lower()
 
     if mode == "dummy":
-        return PaperBroker(mode=mode)
+        return LocalBroker(mode=mode)
     if mode == "local":
-        return PaperBroker(mode=mode, reset_wallet=reset_wallet)
+        return LocalBroker(mode=mode, reset_wallet=reset_wallet)
     elif mode == "kabucom":
         return KabucomBroker()
     elif mode == "real":

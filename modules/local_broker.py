@@ -1,7 +1,7 @@
 from modules.notifier import send_trade_notification
 from modules.broker_base import BrokerBase
 
-class PaperBroker(BrokerBase):
+class LocalBroker(BrokerBase):
     def __init__(self, mode="local", reset_wallet=False):
         from modules.local_wallet import PaperWallet
         self.wallet = PaperWallet()
