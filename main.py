@@ -4,7 +4,7 @@ from modules import screening, notifier
 from modules.backtest_runner import run_backtest_multiple
 from slack_notifier import send_slack_message
 from exit_rules import EXIT_RULES
-from modules.broker_factory import get_broker
+from modules.broker_factory import create_broker
 
 RESET_WALLET = "--reset" in sys.argv
 
@@ -46,7 +46,7 @@ exit_rule_name = config.get("order", {}).get("exit_rule", "rsi")
 exit_rule_func = EXIT_RULES.get(exit_rule_name)
 
 # Broker 初期化（共通）
-broker = get_broker(order_mode, reset_wallet=RESET_WALLET)
+broker = create_broker(order_mode, reset_wallet=RESET_WALLET)
     
 # 自動売買シグナル処理
 broker.process_signals(results)

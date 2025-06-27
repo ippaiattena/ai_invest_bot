@@ -2,7 +2,7 @@ from modules.local_broker import LocalBroker
 from modules.kabucom_broker import KabucomBroker
 from modules.broker_base import BrokerBase
 
-def get_broker(mode: str, reset_wallet: bool = False) -> BrokerBase:
+def create_broker(mode: str, reset_wallet: bool = False) -> BrokerBase:
     """
     モードに応じて対応するBrokerインスタンスを返す。
 
