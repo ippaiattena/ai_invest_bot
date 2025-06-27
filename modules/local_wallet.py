@@ -57,8 +57,8 @@ class PaperWallet:
             "holdings": self.holdings,
             "holding_dates": self.holding_dates
         }
-        os.makedirs("paper_trades", exist_ok=True)
-        with open("paper_trades/wallet.json", "w", encoding="utf-8") as f:
+        os.makedirs("local_trades", exist_ok=True)
+        with open("local_trades/wallet.json", "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
 
     def log_trade(self, trade_type, ticker, price, size):
@@ -76,8 +76,8 @@ class PaperWallet:
             "holdings_after": self.holdings.get(ticker, 0)
         }
 
-        os.makedirs("paper_trades", exist_ok=True)
-        log_path = f"paper_trades/trade_log_{date_str}.json"
+        os.makedirs("local_trades", exist_ok=True)
+        log_path = f"local_trades/trade_log_{date_str}.json"
 
         if os.path.exists(log_path):
             with open(log_path, "r", encoding="utf-8") as f:

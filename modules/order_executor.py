@@ -1,5 +1,5 @@
 from modules.config_loader import get_order_mode
-from modules.paper_wallet import PaperWallet
+from modules.local_wallet import PaperWallet
 
 def place_order(ticker, price):
     mode = get_order_mode()
@@ -7,7 +7,7 @@ def place_order(ticker, price):
     if mode == "dummy":
         print(f"[DUMMY ORDER] {ticker} を仮想発注: {price}")
 
-    elif mode == "paper":
+    elif mode == "local":
         wallet = PaperWallet.load()
         wallet.buy(ticker, price)
         wallet.save()

@@ -1,10 +1,14 @@
 from modules.notifier import send_trade_notification
+from modules.broker_base import BrokerBase
 
-class PaperBroker:
-    def __init__(self, mode="paper"):
-        from modules.paper_wallet import PaperWallet
+class PaperBroker(BrokerBase):
+    def __init__(self, mode="local", reset_wallet=False):
+        from modules.local_wallet import PaperWallet
         self.wallet = PaperWallet()
-        self.mode = mode  # "dummy", "paper", "real"
+        self.mode = mode  # "dummy", "local", "real"
+
+        if reset_wallet:
+            self.wallet.reset_wallet()
 
     def buy(self, ticker, price, size=1):
         self.wallet.buy(ticker, price, size)
@@ -25,7 +29,7 @@ class PaperBroker:
             signal = row["Signal"]
             if self.mode == "dummy":
                 print(f"[DUMMY ORDER] {signal} {ticker} @ {price}")
-            elif self.mode == "paper":
+            elif self.mode == "local":
                 if signal == "Buy":
                     self.buy(ticker, price)
                 elif signal == "Sell":

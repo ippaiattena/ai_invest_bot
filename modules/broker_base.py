@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
 import pandas as pd
 
-class AbstractBroker(ABC):
+class BrokerBase(ABC):
     """
     ブローカー共通インターフェイス。
-    paper / real 問わず、このクラスに準拠する。
+    local / real 問わず、このクラスに準拠する。
     """
 
     @abstractmethod

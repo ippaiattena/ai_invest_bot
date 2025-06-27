@@ -19,7 +19,7 @@ WEBHOOK_URL = os.getenv("SLACK_WEBHOOK_URL")
 SLACK_BOT_TOKEN = os.getenv("SLACK_BOT_TOKEN")
 CLIENT = WebClient(token=SLACK_BOT_TOKEN)
 
-def notify(df, backtest_results=None, paper_broker=None):
+def notify(df, backtest_results=None, local_broker=None):
 
     message = build_slack_message(df, backtest_results)
 
@@ -63,10 +63,10 @@ def notify(df, backtest_results=None, paper_broker=None):
     except Exception as e:
         print(f"📉 指標推移グラフ生成失敗: {e}")
 
-    # --- 保有資産サマリー（paperモードのみ） ---
-    if paper_broker:
+    # --- 保有資産サマリー（localモードのみ） ---
+    if local_broker:
         try:
-            summary_text = paper_broker.format_portfolio_summary()
+            summary_text = local_broker.format_portfolio_summary()
             payload = {"text": summary_text}
             requests.post(WEBHOOK_URL, json=payload)
         except Exception as e:

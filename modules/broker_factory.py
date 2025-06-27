@@ -1,18 +1,20 @@
-from modules.paper_broker import PaperBroker
+from modules.local_broker import PaperBroker
 from modules.kabucom_broker import KabucomBroker
-from modules.broker_base import AbstractBroker
+from modules.broker_base import BrokerBase
 
-def get_broker(mode: str) -> AbstractBroker:
+def get_broker(mode: str, reset_wallet: bool = False) -> BrokerBase:
     """
     モードに応じて対応するBrokerインスタンスを返す。
 
-    :param mode: 発注モード (dummy / paper / kabucom / real)
+    :param mode: 発注モード (dummy / local / kabucom / real)
     :return: AbstractBroker を継承したインスタンス
     """
     mode = mode.lower()
 
-    if mode in ["dummy", "paper"]:
+    if mode == "dummy":
         return PaperBroker(mode=mode)
+    if mode == "local":
+        return PaperBroker(mode=mode, reset_wallet=reset_wallet)
     elif mode == "kabucom":
         return KabucomBroker()
     elif mode == "real":

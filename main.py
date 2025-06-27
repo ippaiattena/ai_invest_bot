@@ -46,23 +46,21 @@ exit_rule_name = config.get("order", {}).get("exit_rule", "rsi")
 exit_rule_func = EXIT_RULES.get(exit_rule_name)
 
 # Broker 初期化（共通）
-broker = get_broker(order_mode)
-if RESET_WALLET and hasattr(broker, "wallet"):
-    broker.wallet.reset_wallet()
-
+broker = get_broker(order_mode, reset_wallet=RESET_WALLET)
+    
 # 自動売買シグナル処理
 broker.process_signals(results)
-if order_mode == "paper":
+if order_mode == "local":
     if exit_rule_func:
         broker.apply_exit_strategy(results, rule_func=lambda df: exit_rule_func(df, rsi_threshold))
     else:
         broker.apply_exit_strategy(results, rule_func=None)
 
 # Slack通知（スクリーニング + トレードサマリー + GSS保存）
-notifier.notify(results, backtest_results=backtest_results, paper_broker=broker if order_mode == "paper" else None)
+notifier.notify(results, backtest_results=backtest_results, local_broker=broker if order_mode == "local" else None)
 
-# 保有資産サマリー出力（paperモード時のみ）
-if order_mode == "paper":
+# 保有資産サマリー出力（localモード時のみ）
+if order_mode == "local":
     summary = broker.get_portfolio_summary()
     print("\n=== 💼 保有資産サマリー ===")
     print(broker.format_portfolio_summary())

@@ -1,8 +1,8 @@
-from modules.broker_base import AbstractBroker
+from modules.broker_base import BrokerBase
 from modules.notifier import send_trade_notification
 
 
-class KabucomBroker(AbstractBroker):
+class KabucomBroker(BrokerBase):
     def __init__(self):
         # ここで将来的にAPIキーの読み込みや認証処理を行う想定
         self.positions = {}  # 仮のローカル保持。実際にはAPIから取得する
