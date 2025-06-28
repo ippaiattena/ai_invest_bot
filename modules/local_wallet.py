@@ -6,11 +6,24 @@ import yfinance as yf
 
 JST = pytz.timezone('Asia/Tokyo')
 
-class PaperWallet:
+class LocalWallet:
     def __init__(self):
         self.cash = 1_000_000
         self.holdings = {}
         self.holding_dates = {}
+
+    @classmethod
+    def load(cls):
+        """保存ファイルからLocalWalletインスタンスを復元する"""
+        path = "local_trades/wallet.json"
+        wallet = cls()
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                wallet.cash = data.get("cash", 1_000_000)
+                wallet.holdings = data.get("holdings", {})
+                wallet.holding_dates = data.get("holding_dates", {})
+        return wallet
 
     def reset_wallet(self):
         """ウォレットを初期状態に戻す"""
@@ -18,7 +31,7 @@ class PaperWallet:
         self.holdings = {}
         self.holding_dates = {}
         self.save()
-        print("🔁 Paper wallet を初期化しました。")
+        print("🔁 Local wallet を初期化しました。")
 
     def get_position(self, ticker):
         """指定ティッカーの保有数を返す（未保有なら0）"""

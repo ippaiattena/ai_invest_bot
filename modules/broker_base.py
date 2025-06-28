@@ -1,10 +1,11 @@
 from abc import ABC, abstractmethod
 import pandas as pd
+from typing import Callable, Optional
 
 class BrokerBase(ABC):
     """
     ブローカー共通インターフェイス。
-    local / real 問わず、このクラスに準拠する。
+    local / api 問わず、このクラスに準拠する。
     """
 
     @abstractmethod
@@ -26,7 +27,7 @@ class BrokerBase(ABC):
         pass
 
     @abstractmethod
-    def apply_exit_strategy(self, screening_df: pd.DataFrame, rule_func: callable = None):
+    def apply_exit_strategy(self, screening_df: pd.DataFrame, rule_func: Optional[Callable[[pd.DataFrame], dict[str, bool]]] = None):
         """Exitルールを適用して売却シグナル処理"""
         pass
 

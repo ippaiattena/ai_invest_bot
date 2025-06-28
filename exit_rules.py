@@ -1,8 +1,9 @@
-def exit_by_rsi(screening_df, rsi_threshold=70):
+def exit_by_rsi(screening_df, config):
     """
     RSIが閾値を超えたら売却シグナルを返す
-    Returns: dict[ticker] = True（売却推奨）
+    config: {"rsi_threshold": 70} のような辞書
     """
+    rsi_threshold = config.get("rsi_threshold", 70)
     exit_signals = {}
     for _, row in screening_df.iterrows():
         ticker = row["Ticker"]
@@ -11,10 +12,8 @@ def exit_by_rsi(screening_df, rsi_threshold=70):
             exit_signals[ticker] = True
     return exit_signals
 
-def exit_by_dummy(screening_df, rsi_threshold=70):
-    """
-    すべて売却（テスト用）
-    """
+def exit_by_dummy(screening_df, config):
+    """すべて売却（テスト用）"""
     return {row["Ticker"]: True for _, row in screening_df.iterrows()}
 
 # ルール名に対応する関数辞書

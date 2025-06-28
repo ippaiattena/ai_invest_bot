@@ -1,11 +1,13 @@
 from modules.notifier import send_trade_notification
 from modules.broker_base import BrokerBase
+import pandas as pd
+from typing import Callable, Optional
 
 class LocalBroker(BrokerBase):
     def __init__(self, mode="local", reset_wallet=False):
-        from modules.local_wallet import PaperWallet
-        self.wallet = PaperWallet()
-        self.mode = mode  # "dummy", "local", "real"
+        from modules.local_wallet import LocalWallet
+        self.wallet = LocalWallet()
+        self.mode = mode  # "dummy", "local"
 
         if reset_wallet:
             self.wallet.reset_wallet()
@@ -34,10 +36,8 @@ class LocalBroker(BrokerBase):
                     self.buy(ticker, price)
                 elif signal == "Sell":
                     self.sell(ticker, price)
-            elif self.mode == "real":
-                print(f"[REAL ORDER] {signal} {ticker} @ {price}（未実装）")
 
-    def apply_exit_strategy(self, screening_df, rule_func: callable = None):
+    def apply_exit_strategy(self, screening_df, rule_func: Optional[Callable[[pd.DataFrame], dict[str, bool]]] = None):
         """
         与えられたルール関数に従ってExitシグナルを判定し、売却を実行。
         rule_func: Callable(screening_df) -> dict[ticker: bool]
