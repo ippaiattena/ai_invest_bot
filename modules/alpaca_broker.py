@@ -77,11 +77,13 @@ class AlpacaBroker(ApiBrokerBase):
     def apply_exit_strategy(self, screening_df: pd.DataFrame, rule_func: Optional[Callable[[pd.DataFrame], dict[str, bool]]] = None):
         if not rule_func:
             return
+
         exit_signals = rule_func(screening_df)
         positions = self.get_positions()
+
         for ticker, info in positions.items():
             if exit_signals.get(ticker):
-                self.sell(ticker, info["price"])
+                self.sell(ticker, info["price"], size=info["size"])
 
     def get_portfolio_summary(self) -> dict:
         account = requests.get(f"{self.base_url}/v2/account", headers=self.headers).json()

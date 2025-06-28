@@ -53,12 +53,11 @@ broker = create_broker(order_mode, reset_wallet=RESET_WALLET)
     
 # 自動売買シグナル処理
 broker.process_signals(results)
-if order_mode == "local":
-    if exit_rule_func is not None:
-        rule = lambda df: exit_rule_func(df, exit_rule_config)
-    else:
-        rule = None
-    broker.apply_exit_strategy(results, rule_func=rule)
+if exit_rule_func is not None:
+    rule = lambda df: exit_rule_func(df, exit_rule_config)
+else:
+    rule = None
+broker.apply_exit_strategy(results, rule_func=rule)
 
 # Slack通知（スクリーニング + トレードサマリー + GSS保存）
 notifier.notify(results, backtest_results=backtest_results, local_broker=broker if order_mode == "local" else None)
