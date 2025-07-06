@@ -18,7 +18,12 @@ rsi_threshold = config.get("rsi_threshold", 70)
 start_date = config.get("backtest_start", "2023-01-01")
 end_date = config.get("backtest_end", "2024-01-01")
 
-backtest_results = run_backtest_multiple(tickers, start=start_date, end=end_date, strategy_class=SmaRsiStrategy)
+backtest_results = run_backtest_multiple(
+    tickers,
+    start=start_date,
+    end=end_date,
+    strategy_name="sma_rsi"
+)
 
 # バックテスト評価指標の要約をSlack通知用に整形
 summary_lines = [":chart_with_upwards_trend: *バックテスト評価指標*"]

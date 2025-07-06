@@ -9,8 +9,16 @@ import pandas as pd
 from strategies.sma_rsi_strategy import SmaRsiStrategy
 from modules.plotting import plot_trade_chart
 from strategies.sma_rsi_strategy import SmaRsiStrategy
+# 今後追加される戦略クラスもここにインポートする
+# 例: from strategies.ema_crossover_strategy import EmaCrossoverStrategy
 
-def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_cash=100000, strategy_class=SmaRsiStrategy):
+# 戦略名とクラスのマッピング
+strategy_map = {
+    "sma_rsi": SmaRsiStrategy,
+    # "ema_crossover": EmaCrossoverStrategy,
+}
+
+def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_cash=100000, strategy_name='sma_rsi'):
 
     # データ取得
     df = yf.download(ticker, start=start, end=end)
@@ -22,6 +30,9 @@ def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_ca
 
     # Cerebro（脳）セットアップ
     cerebro = bt.Cerebro()
+    strategy_class = strategy_map.get(strategy_name)
+    if strategy_class is None:
+        raise ValueError(f"指定された戦略 '{strategy_name}' は存在しません")
     cerebro.addstrategy(strategy_class)
     cerebro.adddata(data)
     cerebro.broker.set_cash(initial_cash)
@@ -121,7 +132,7 @@ def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_ca
 
     return strategy, log_df, metrics
 
-def run_backtest_multiple(tickers, start, end, initial_cash=100000, strategy_class=SmaRsiStrategy):
+def run_backtest_multiple(tickers, start, end, initial_cash=100000, strategy_name='sma_rsi'):
     results = []
     for ticker in tickers:
         print(f"\n=== {ticker} のバックテスト開始 ===")
@@ -130,7 +141,7 @@ def run_backtest_multiple(tickers, start, end, initial_cash=100000, strategy_cla
             start=start,
             end=end,
             initial_cash=initial_cash,
-            strategy_class=strategy_class
+            strategy_name=strategy_name
         )
         if log_df is not None and not log_df.empty:
             result = {
