@@ -5,6 +5,7 @@ from modules.backtest_runner import run_backtest_multiple
 from slack_notifier import send_slack_message
 from exit_rules import EXIT_RULES
 from modules.broker_factory import create_broker
+from strategies.sma_rsi_strategy import SmaRsiStrategy
 
 RESET_WALLET = "--reset" in sys.argv
 
@@ -17,7 +18,7 @@ rsi_threshold = config.get("rsi_threshold", 70)
 start_date = config.get("backtest_start", "2023-01-01")
 end_date = config.get("backtest_end", "2024-01-01")
 
-backtest_results = run_backtest_multiple(tickers, start=start_date, end=end_date)
+backtest_results = run_backtest_multiple(tickers, start=start_date, end=end_date, strategy_class=SmaRsiStrategy)
 
 # バックテスト評価指標の要約をSlack通知用に整形
 summary_lines = [":chart_with_upwards_trend: *バックテスト評価指標*"]

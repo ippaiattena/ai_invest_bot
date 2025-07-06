@@ -8,9 +8,9 @@ import os
 import pandas as pd
 from strategies.sma_rsi_strategy import SmaRsiStrategy
 from modules.plotting import plot_trade_chart
-from datetime import datetime
+from strategies.sma_rsi_strategy import SmaRsiStrategy
 
-def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_cash=100000):
+def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_cash=100000, strategy_class=SmaRsiStrategy):
 
     # データ取得
     df = yf.download(ticker, start=start, end=end)
@@ -22,7 +22,7 @@ def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_ca
 
     # Cerebro（脳）セットアップ
     cerebro = bt.Cerebro()
-    cerebro.addstrategy(SmaRsiStrategy)
+    cerebro.addstrategy(strategy_class)
     cerebro.adddata(data)
     cerebro.broker.set_cash(initial_cash)
     cerebro.addsizer(bt.sizers.FixedSize, stake=10)
@@ -121,11 +121,17 @@ def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_ca
 
     return strategy, log_df, metrics
 
-def run_backtest_multiple(tickers, start, end, initial_cash=100000):
+def run_backtest_multiple(tickers, start, end, initial_cash=100000, strategy_class=SmaRsiStrategy):
     results = []
     for ticker in tickers:
         print(f"\n=== {ticker} のバックテスト開始 ===")
-        strategy, log_df, metrics = run_backtest(ticker=ticker, start=start, end=end, initial_cash=initial_cash)
+        strategy, log_df, metrics = run_backtest(
+            ticker=ticker,
+            start=start,
+            end=end,
+            initial_cash=initial_cash,
+            strategy_class=strategy_class
+        )
         if log_df is not None and not log_df.empty:
             result = {
                 "ticker": ticker,
