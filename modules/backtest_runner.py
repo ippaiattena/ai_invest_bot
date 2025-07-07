@@ -6,9 +6,9 @@ import yfinance as yf
 import backtrader as bt
 import os
 import pandas as pd
-from strategies.sma_rsi_strategy import SmaRsiStrategy
-from modules.plotting import plot_trade_chart
-from strategies.sma_rsi_strategy import SmaRsiStrategy
+import mplfinance as mpf
+from ai_invest_bot.strategies.sma_rsi_strategy import SmaRsiStrategy
+from ai_invest_bot.modules.plotting import plot_trade_chart
 # 今後追加される戦略クラスもここにインポートする
 # 例: from strategies.ema_crossover_strategy import EmaCrossoverStrategy
 
@@ -43,10 +43,35 @@ def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_ca
     cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
     cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
 
+    equity_curve = []
+
     # 実行＆結果表示
     print(f"初期資金: {cerebro.broker.getvalue():.2f}")
+    #results = cerebro.run()
+    # 日ごとの資産推移を記録するため、Observerを使う（または自前で記録）
+    class EquityRecorder(bt.Strategy):
+        def __init__(self):
+            self.values = []
+
+        def next(self):
+            self.values.append((self.datas[0].datetime.date(0).isoformat(), self.broker.getvalue()))
+
+    # strategy_classを使う代わりに一時的にラップ
+    cerebro = bt.Cerebro()
+    cerebro.addstrategy(strategy_class)
+    cerebro.addstrategy(EquityRecorder)
+    cerebro.adddata(data)
+    cerebro.broker.set_cash(initial_cash)
+    cerebro.addsizer(bt.sizers.FixedSize, stake=10)
+    cerebro.addanalyzer(bt.analyzers.SharpeRatio, _name='sharpe')
+    cerebro.addanalyzer(bt.analyzers.DrawDown, _name='drawdown')
+    cerebro.addanalyzer(bt.analyzers.Returns, _name='returns')
+
     results = cerebro.run()
+    strategy = results[0]  # 通常戦略
+    recorder = results[1]  # EquityRecorder
     print(f"最終資金: {cerebro.broker.getvalue():.2f}")
+    equity_curve = [{"date": d, "value": v} for d, v in recorder.values]
 
     strategy = results[0]
 
@@ -100,7 +125,6 @@ def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_ca
         print("\nトレードサマリーを出力できるデータがありませんでした。")
 
     # グラフ表示
-    import mplfinance as mpf
 
     # 日付をインデックスに変換（mplfinance用に）
     df.index = pd.to_datetime(df.index).normalize()
@@ -130,13 +154,13 @@ def run_backtest(ticker='AAPL', start='2023-01-01', end='2024-01-01', initial_ca
     plot_path = f"data/backtest_plot_mpl_{ticker}.png"
     plot_trade_chart(df, strategy.trade_log, ticker, plot_path)
 
-    return strategy, log_df, metrics
+    return strategy, log_df, metrics, equity_curve
 
 def run_backtest_multiple(tickers, start, end, initial_cash=100000, strategy_name='sma_rsi'):
     results = []
     for ticker in tickers:
         print(f"\n=== {ticker} のバックテスト開始 ===")
-        strategy, log_df, metrics = run_backtest(
+        strategy, log_df, metrics, equity_curve = run_backtest(
             ticker=ticker,
             start=start,
             end=end,
@@ -148,7 +172,8 @@ def run_backtest_multiple(tickers, start, end, initial_cash=100000, strategy_nam
                 "ticker": ticker,
                 "log": log_df,
                 "chart": f"data/backtest_plot_mpl_{ticker}.png",
-                "metrics": metrics
+                "metrics": metrics,
+                "equity_curve": equity_curve,
             }
             results.append(result)
         else:
