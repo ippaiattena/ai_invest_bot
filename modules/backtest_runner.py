@@ -7,8 +7,8 @@ import backtrader as bt
 import os
 import pandas as pd
 import mplfinance as mpf
-from ai_invest_bot.strategies.sma_rsi_strategy import SmaRsiStrategy
-from ai_invest_bot.modules.plotting import plot_trade_chart
+from strategies.sma_rsi_strategy import SmaRsiStrategy
+from modules.plotting import plot_trade_chart
 # 今後追加される戦略クラスもここにインポートする
 # 例: from strategies.ema_crossover_strategy import EmaCrossoverStrategy
 
